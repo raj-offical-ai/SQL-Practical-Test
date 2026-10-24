@@ -1,0 +1,542 @@
+
+=====================================================================================================
+
+
+                                 E-COMMERCE ORDER MANAGEMENT SYSTEM                              ║
+                                 MYSQL OUTPUTS + QUERY-WISE REASONS                             
+
+
+=====================================================================================================
+1. TABLE CREATION AND RELATIONSHIPS
+=====================================================================================================
+
+OUTPUT / STATUS
+Database: ecommerce_management
+
+Tables created:
++-------------+
+| Table Name  |
++-------------+
+| Categories  |
+| Products    |
+| Customers   |
+| Orders      |
+| Order_Items |
+| Payments    |
+| Shipping    |
++-------------+
+
+REASON
+Separate tables organise store data. PRIMARY KEY identifies each row,
+while FOREIGN KEY links related records.
+
+=====================================================================================================
+2. CRUD OPERATIONS
+=====================================================================================================
+
+2.1 INSERT A NEW PRODUCT
+
+EXPECTED OUTPUT / STATUS
+Query OK, 1 row affected
+
+REASON
+INSERT adds the Bluetooth Speaker; CURDATE() records today's date.
+
+2.2 UPDATE PRODUCT STOCK
+
+EXPECTED OUTPUT / STATUS
+Query OK, 1 row affected
+
+PRODUCT 1 STOCK
++------------+---------------+
+| product_id | stock_quantity|
++------------+---------------+
+| 1          | 24            |
++------------+---------------+
+
+REASON
+UPDATE reduces stock by one. The condition prevents stock from becoming negative.
+
+2.3 DELETE OLD CANCELLED ORDERS
+
+EXPECTED OUTPUT IF FOREIGN-KEY ERROR OCCURS
+ERROR 1451: Cannot delete or update a parent row: a foreign key constraint fails.
+
+REASON
+MySQL blocks deletion because Order_Items and Payments reference this order. 
+Handle related rows first or use a suitable ON DELETE rule.
+
+=====================================================================================================
+3. WHERE, HAVING AND LIMIT
+=====================================================================================================
+
+3.1 ORDERS PLACED IN THE LAST 6 MONTHS
+Example date: 23-10-2026
+
+EXPECTED OUTPUT
++----------+-------------+------------+--------------+-----------+
+| order_id | customer_id | order_date | total_amount | status    |
++----------+-------------+------------+--------------+-----------+
+| 1        | 1           | 2026-10-03 | 18800.00     | Delivered |
+| 2        | 2           | 2026-09-08 | 65000.00     | Shipped   |
+| 3        | 1           | 2026-08-04 | 42000.00     | Delivered |
+| 4        | 3           | 2026-06-15 | 9500.00      | Pending   |
+| 6        | 5           | 2026-10-08 | 42000.00     | Delivered |
++----------+-------------+------------+--------------+-----------+
+
+REASON
+WHERE selects orders from the last six months; DATE_SUB calculates the cutoff date.
+
+3.2 TOP 5 HIGHEST-PRICED PRODUCTS
+
+EXPECTED OUTPUT
++------------+------------------+-------------+----------+---------------+------------+------------+
+| product_id | name             | category_id | price    | stock_quantity| added_date | sold_units |
++------------+------------------+-------------+----------+---------------+------------+------------+
+| 2          | Laptop Pro       | 2           | 65000.00 | 8             | 2025-02-15 | 350        |
+| 4          | LED Television   | 4           | 42000.00 | 12            | 2025-04-20 | 520        |
+| 1          | Smartphone A     | 1           | 18000.00 | 24            | 2025-01-10 | 620        |
+| 6          | Budget Phone     | 1           | 9500.00  | 15            | 2025-06-08 | 180        |
+| 3          | Wireless Mouse   | 3           | 800.00   | 0             | 2025-03-05 | 240        |
++------------+------------------+-------------+----------+---------------+------------+------------+
+
+REASON
+ORDER BY price DESC sorts prices high to low, and LIMIT 5 shows five products.
+
+3.3 CUSTOMERS WHO PLACED MORE THAN 3 ORDERS
+
+EXPECTED OUTPUT
+Empty set (0 rows)
+
+REASON
+COUNT totals orders per customer. HAVING keeps counts above three; 
+no sample customer meets this condition.
+
+=====================================================================================================
+4. SQL OPERATORS: AND, OR, NOT
+=====================================================================================================
+
+4.1 PENDING ORDERS WHOSE PAYMENT IS PAID
+
+EXPECTED OUTPUT
+Empty set (0 rows)
+
+REASON
+AND requires both conditions. No order is both Pending and Paid in the sample data.
+
+4.2 PRODUCTS THAT ARE NOT OUT OF STOCK
+
+EXPECTED OUTPUT
++------------+------------------+-------------+----------+---------------+------------+------------+
+| product_id | name             | category_id | price    | stock_quantity| added_date | sold_units |
++------------+------------------+-------------+----------+---------------+------------+------------+
+| 1          | Smartphone A     | 1           | 18000.00 | 24            | 2025-01-10 | 620        |
+| 2          | Laptop Pro       | 2           | 65000.00 | 8             | 2025-02-15 | 350        |
+| 4          | LED Television   | 4           | 42000.00 | 12            | 2025-04-20 | 520        |
+| 5          | USB Cable        | 3           | 250.00   | 100           | 2025-05-12 | 120        |
+| 6          | Budget Phone     | 1           | 9500.00  | 15            | 2025-06-08 | 180        |
+| 7          | Bluetooth Speaker| 3           | 2200.00  | 30            | 2026-10-23 | 0          |
++------------+------------------+-------------+----------+---------------+------------+------------+
+
+REASON
+NOT excludes products with zero stock, so Wireless Mouse is omitted.
+
+4.3 CUSTOMERS REGISTERED AFTER 2022 OR WITH PURCHASES ABOVE ₹10,000
+
+EXPECTED OUTPUT (customer rows may repeat only if DISTINCT does not collapse different columns;
+this query selects customer fields only, so each customer appears once)
++-------------+--------------+------------------+
+| customer_id | name         | registration_date|
++-------------+--------------+------------------+
+| 1           | Aarav Sharma | 2021-05-10       |
+| 2           | Priya Patel  | 2023-02-18       |
+| 3           | Rahul Verma  | 2024-07-12       |
+| 4           | Neha Singh   | 2022-11-25       |
+| 5           | Kabir Shah   | 2025-01-09       |
+| 6           | Isha Mehta   | 2020-08-01       |
++-------------+--------------+------------------+
+
+REASON
+OR matches either condition; DISTINCT removes duplicate customer rows.
+
+=====================================================================================================
+5. SORTING AND GROUPING
+=====================================================================================================
+
+5.1 PRODUCTS SORTED BY PRICE DESCENDING
+Expected order:
+Laptop Pro — 65000.00
+LED Television — 42000.00
+Smartphone A — 18000.00
+Budget Phone — 9500.00
+Bluetooth Speaker — 2200.00
+Wireless Mouse — 800.00
+USB Cable — 250.00
+
+REASON
+ORDER BY price DESC sorts products from highest to lowest price.
+
+5.2 NUMBER OF ORDERS PER CUSTOMER
+
+EXPECTED OUTPUT
++-------------+--------------+--------------+
+| customer_id | name         | total_orders |
++-------------+--------------+--------------+
+| 1           | Aarav Sharma | 2            |
+| 2           | Priya Patel  | 2            |
+| 3           | Rahul Verma  | 1            |
+| 4           | Neha Singh   | 1            |
+| 5           | Kabir Shah   | 1            |
+| 6           | Isha Mehta   | 1            |
++-------------+--------------+--------------+
+
+REASON
+LEFT JOIN includes all customers; COUNT and GROUP BY show each customer's order total.
+
+5.3 TOTAL REVENUE GENERATED PER CATEGORY
+This query excludes cancelled orders.
+
+EXPECTED OUTPUT
++------------+---------------+-----------------+
+| category_id| category_name | category_revenue|
++------------+---------------+-----------------+
+| 1          | Mobiles       | 27500.00        |
+| 2          | Laptops       | 130000.00       |
+| 3          | Accessories   | 1850.00         |
+| 4          | Televisions   | 84000.00        |
++------------+---------------+-----------------+
+
+REASON
+JOIN links related tables, SUM totals item subtotals, and GROUP BY shows 
+revenue per category, excluding cancelled orders.
+
+=====================================================================================================
+6. AGGREGATE FUNCTIONS: SUM, AVG, MAX, MIN, COUNT
+=====================================================================================================
+
+6.1 TOTAL STORE REVENUE (excluding cancelled orders)
+
+EXPECTED OUTPUT
++---------------+
+| total_revenue |
++---------------+
+| 243350.00     |
++---------------+
+
+REASON
+SUM totals amounts for orders that are not cancelled.
+
+6.2 MOST PURCHASED PRODUCT BY QUANTITY
+
+EXPECTED OUTPUT
++------------+--------------+--------------------+
+| product_id | name         | total_quantity_sold |
++------------+--------------+--------------------+
+| 2          | Laptop Pro   | 2                  |
++------------+--------------+--------------------+
+
+REASON
+SUM totals units sold; ORDER BY and LIMIT 1 return the most-purchased product.
+
+6.3 AVERAGE ORDER VALUE (excluding cancelled orders)
+
+EXPECTED OUTPUT
++--------------------+
+| average_order_value|
++--------------------+
+| 34807.142857       |
++--------------------+
+
+REASON
+AVG calculates the mean value of non-cancelled orders.
+
+=====================================================================================================
+7. PRIMARY KEY AND FOREIGN KEY RELATIONSHIPS
+=====================================================================================================
+
+RELATIONSHIPS
+Categories.category_id  -> Products.category_id
+Customers.customer_id    -> Orders.customer_id
+Orders.order_id          -> Order_Items.order_id
+Products.product_id      -> Order_Items.product_id
+Orders.order_id          -> Payments.order_id
+Orders.order_id          -> Shipping.order_id
+
+REASON
+Primary keys identify rows; foreign keys link categories, customers, orders, 
+products, payments and shipments.
+
+=====================================================================================================
+8. JOINS
+=====================================================================================================
+
+8.1 INNER JOIN: PRODUCTS WITH CATEGORY NAMES
+
+EXPECTED OUTPUT
++------------+-------------------+---------------+
+| product_id | product_name      | category_name |
++------------+-------------------+---------------+
+| 1          | Smartphone A      | Mobiles       |
+| 2          | Laptop Pro        | Laptops       |
+| 3          | Wireless Mouse    | Accessories   |
+| 4          | LED Television    | Televisions   |
+| 5          | USB Cable         | Accessories   |
+| 6          | Budget Phone      | Mobiles       |
+| 7          | Bluetooth Speaker | Accessories   |
++------------+-------------------+---------------+
+
+REASON
+INNER JOIN shows products with a matching category.
+
+8.2 LEFT JOIN: ALL ORDERS WITH CUSTOMER DETAILS
+
+EXPECTED OUTPUT COLUMNS
+order_id | order_date | total_amount | status | customer_id | customer_name | email
+
+REASON
+LEFT JOIN shows all orders with customer details; unmatched customer fields would be NULL.
+
+8.3 RIGHT JOIN: ORDERS THAT HAVE NOT BEEN SHIPPED
+
+EXPECTED OUTPUT
++----------+-----------+------------+----------------+
+| order_id | status    | shipping_id| shipping_status|
++----------+-----------+------------+----------------+
+| 4        | Pending   | NULL       | NULL           |
+| 5        | Cancelled | NULL       | NULL           |
+| 7        | Delivered | NULL       | NULL           |
+| 8        | Delivered | NULL       | NULL           |
++----------+-----------+------------+----------------+
+
+REASON
+RIGHT JOIN keeps all orders; IS NULL finds orders without a Shipping record.
+
+8.4 FULL OUTER JOIN EQUIVALENT IN MYSQL
+
+OUTPUT
+This query returns all customer/order combinations, including customers with no orders and
+orders with no matching customer. UNION removes duplicate rows.
+
+REASON
+MySQL lacks FULL OUTER JOIN; LEFT JOIN and RIGHT JOIN with UNION provide an equivalent result.
+
+=====================================================================================================
+9. SUBQUERIES
+=====================================================================================================
+
+9.1 ORDERS FROM CUSTOMERS REGISTERED AFTER 2022
+
+EXPECTED OUTPUT ORDER IDs
+2, 4, 6, 7
+
+REASON
+The subquery finds customers registered from 2023 onward; the outer query lists their orders.
+
+9.2 CUSTOMER WHO SPENT THE MOST (excluding cancelled orders)
+
+EXPECTED OUTPUT
++-------------+--------------+------------+
+| customer_id | name         | total_spent|
++-------------+--------------+------------+
+| 2           | Priya Patel  | 66050.00   |
++-------------+--------------+------------+
+
+REASON
+The subquery totals each customer's spending; MAX identifies the highest spender.
+
+9.3 PRODUCTS THAT HAVE NEVER BEEN ORDERED
+
+EXPECTED OUTPUT
++------------+-------------------+
+| product_id | name              |
++------------+-------------------+
+| 7          | Bluetooth Speaker |
++------------+-------------------+
+
+REASON
+NOT EXISTS finds products absent from Order_Items; the Bluetooth Speaker has no order yet.
+
+=====================================================================================================
+10. DATE AND TIME FUNCTIONS
+=====================================================================================================
+
+10.1 COUNT ORDERS PER MONTH
+
+OUTPUT FORMAT
++------------+-------------+-------------+
+| order_year | order_month | order_count |
++------------+-------------+-------------+
+| 2025       | 9           | 1           |
+| 2025       | 12          | 1           |
+| 2026       | 4           | 1           |
+| 2026       | 6           | 1           |
+| 2026       | 8           | 1           |
+| 2026       | 9           | 1           |
+| 2026       | 10          | 2           |
++------------+-------------+-------------+
+
+REASON
+YEAR and MONTH group orders by date; COUNT totals orders in each month.
+
+10.2 DELIVERY TIME IN DAYS
+
+EXPECTED OUTPUT
++------------+----------+--------------+
+| shipping_id| order_id | delivery_days|
++------------+----------+--------------+
+| 1          | 1        | 2            |
+| 3          | 3        | 3            |
+| 4          | 6        | 2            |
++------------+----------+--------------+
+
+REASON
+DATEDIFF calculates delivery days; rows without a delivery date are excluded.
+
+10.3 FORMAT ORDER DATE AS DD-MM-YYYY
+
+OUTPUT FORMAT
++----------+--------------------+
+| order_id | formatted_order_date|
++----------+--------------------+
+| 1        | 03-10-2026         |
+| 2        | 08-09-2026         |
+| 3        | 04-08-2026         |
+| 4        | 15-06-2026         |
+| 5        | 06-04-2026         |
+| 6        | 08-10-2026         |
+| 7        | 27-12-2025         |
+| 8        | 18-09-2025         |
++----------+--------------------+
+
+REASON
+DATE_FORMAT displays dates as DD-MM-YYYY without changing stored values.
+
+=====================================================================================================
+11. STRING MANIPULATION FUNCTIONS
+=====================================================================================================
+
+11.1 UPPERCASE PRODUCT NAMES
+
+EXPECTED OUTPUT
++------------+---------------------+
+| product_id | uppercase_product_name|
++------------+---------------------+
+| 1          | SMARTPHONE A        |
+| 2          | LAPTOP PRO          |
+| 3          | WIRELESS MOUSE      |
+| 4          | LED TELEVISION      |
+| 5          | USB CABLE           |
+| 6          | BUDGET PHONE        |
+| 7          | BLUETOOTH SPEAKER   |
++------------+---------------------+
+
+REASON
+UPPER shows product names in uppercase without changing stored data.
+
+11.2 TRIM CUSTOMER NAMES
+
+EXPECTED OUTPUT
+Aarav Sharma
+Priya Patel
+Rahul Verma
+Neha Singh
+Kabir Shah
+Isha Mehta
+
+REASON
+TRIM removes leading and trailing spaces from names.
+
+11.3 REPLACE MISSING EMAIL WITH 'Not Provided'
+
+EXPECTED OUTPUT
++-------------+--------------+--------------------+
+| customer_id | name         | email              |
++-------------+--------------+--------------------+
+| 1           | Aarav Sharma | aarav@example.com  |
+| 2           | Priya Patel  | priya@example.com  |
+| 3           | Rahul Verma  | Not Provided       |
+| 4           | Neha Singh   | neha@example.com   |
+| 5           | Kabir Shah   | kabir@example.com  |
+| 6           | Isha Mehta   | isha@example.com   |
++-------------+--------------+--------------------+
+
+REASON
+TRIM cleans spaces, NULLIF detects blanks, and COALESCE displays 'Not Provided' for missing emails.
+
+=====================================================================================================
+12. WINDOW FUNCTIONS
+=====================================================================================================
+
+12.1 RANK CUSTOMERS BY TOTAL SPENDING
+
+OUTPUT COLUMNS
+customer_id | name | total_spending | spending_rank
+
+REASON
+The CTE totals non-cancelled spending; RANK orders customers from highest to lowest, sharing ranks for ties.
+
+12.2 RUNNING TOTAL OF REVENUE PER MONTH
+
+OUTPUT COLUMNS
+order_month | monthly_revenue | running_total_revenue
+
+REASON
+Monthly revenue is calculated first, then SUM OVER creates a cumulative total by month.
+
+12.3 RUNNING TOTAL OF ORDER AMOUNTS
+
+OUTPUT COLUMNS
+order_id | order_date | total_amount | running_order_total
+
+REASON
+SUM OVER adds order amounts chronologically while keeping one row per order.
+
+=====================================================================================================
+13. CASE EXPRESSIONS
+=====================================================================================================
+
+13.1 CUSTOMER LOYALTY STATUS
+
+OUTPUT COLUMNS
+customer_id | name | total_spending | Loyalty_Status
+
+RULES
+Gold   : total_spending > 50000
+Silver : total_spending between 20000 and 50000, inclusive
+Bronze : all other totals
+
+REASON
+CASE assigns Gold, Silver or Bronze based on total spending, excluding cancelled orders.
+
+13.2 PRODUCT CATEGORY BASED ON SOLD UNITS
+
+EXPECTED OUTPUT
++------------+-------------------+------------+----------------+
+| product_id | name              | sold_units | product_category|
++------------+-------------------+------------+----------------+
+| 1          | Smartphone A      | 620        | Best Seller    |
+| 2          | Laptop Pro        | 350        | Popular        |
+| 3          | Wireless Mouse    | 240        | Popular        |
+| 4          | LED Television    | 520        | Best Seller    |
+| 5          | USB Cable         | 120        | Regular        |
+| 6          | Budget Phone      | 180        | Regular        |
+| 7          | Bluetooth Speaker | 0          | Regular        |
++------------+-------------------+------------+----------------+
+
+REASON
+CASE labels products Best Seller (>500), Popular (200–500) or Regular (<200).
+
+=====================================================================================================
+                           FINAL PRACTICAL NOTES
+======================================================================================================
+
+• Copy the relevant OUTPUT table into your practical notebook/record.
+• In viva, explain the REASON written immediately after that output.
+• Some result grids depend on current date, row ordering, and whether earlier statements ran.
+• The SQL script's DELETE may fail due to foreign-key references. This is expected unless the
+  child rows are removed first or the schema is changed.
+• The window-function and CTE queries require MySQL 8.0 or newer.
+• For exact live output, execute each SELECT in MySQL Workbench; this document is a clean
+  expected-output guide, not a captured result from your local database.
+
+========================================================================================================
